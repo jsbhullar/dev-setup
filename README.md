@@ -1,6 +1,3 @@
-### ✅ `README.md`
-
-````markdown
 # 🛠️ Ubuntu Developer Workstation Setup
 
 This repository provides a **fully automated setup** script using **Ansible** to transform a fresh Ubuntu Desktop system into a powerful, AI-ready development machine.
