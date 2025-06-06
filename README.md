@@ -49,7 +49,7 @@ nvm use --lts
 rustup update
 ```
 
-For Go, update manually via latest `.tar.gz` download.
+> For Go, update manually via latest `.tar.gz` download.
 
 ---
 
@@ -139,6 +139,41 @@ docker restart dev-postgres
 
 ---
 
+### 🧑‍💻 Visual Studio Code (VS Code)
+
+* Installed from official Microsoft repository
+* Lightweight, extensible IDE with marketplace
+
+> 📌 Launch:
+
+```bash
+code
+```
+
+> 📌 Update:
+> Handled via system package manager:
+
+```bash
+sudo apt update && sudo apt upgrade code
+```
+
+---
+
+### 🗂 pgAdmin 4 (PostgreSQL GUI)
+
+* GUI tool to manage PostgreSQL databases locally
+* Installed as a native GTK desktop app
+
+> 📌 Launch: Search **pgAdmin 4** from application menu
+> 📌 Connect to DB:
+
+* Host: `localhost`
+* Port: `5432`
+* Username: `devuser`
+* Password: `devpass`
+
+---
+
 ## 🔧 Installation Instructions
 
 1. Clone this repository:
@@ -160,17 +195,17 @@ cd dev-setup
 
 ## 🌍 Port Map Summary
 
-| Service       | URL                                              |
+| Service       | URL/Access                                       |
 | ------------- | ------------------------------------------------ |
 | Portainer     | [https://localhost:9443](https://localhost:9443) |
 | Dokploy       | [http://localhost:3000](http://localhost:3000)   |
 | Open WebUI    | [http://localhost:3002](http://localhost:3002)   |
-| PostgreSQL DB | localhost:5432                                   |
+| PostgreSQL DB | `localhost:5432`                                 |
+| VS Code       | `code` in terminal or app menu                   |
+| pgAdmin 4     | Application menu > pgAdmin 4                     |
 
 ---
 
 ## 🤝 Contributing
 
-Pull requests to add other languages, SDKs, or tools (e.g. Java, Deno, AI APIs) are welcome!
-
-
+Pull requests to add other languages, SDKs, GUI tools (e.g., Deno, Java, RedisInsight), or LLM enhancements are welcome!

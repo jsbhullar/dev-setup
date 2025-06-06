@@ -176,3 +176,26 @@
         POSTGRES_PASSWORD: devpass
         POSTGRES_USER: devuser
         POSTGRES_DB: devdb
+
+  - name: Add Microsoft GPG key for VS Code
+    apt_key:
+      url: https://packages.microsoft.com/keys/microsoft.asc
+      state: present
+
+  - name: Add VS Code repository
+    apt_repository:
+      repo: deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main
+      state: present
+
+  - name: Install VS Code
+    apt:
+      name: code
+      state: present
+
+  - name: Install pgAdmin (PostgreSQL GUI)
+    shell: |
+      curl https://www.pgadmin.org/static/packages_pgadmin_org.pub | gpg --dearmor > /usr/share/keyrings/pgadmin.gpg
+      echo "deb [signed-by=/usr/share/keyrings/pgadmin.gpg] https://ftp.postgresql.org/pub/pgadmin/pgadmin4/apt/jammy pgadmin4 main" > /etc/apt/sources.list.d/pgadmin4.list
+      apt update && apt install -y pgadmin4-desktop
+    args:
+      executable: /bin/bash
