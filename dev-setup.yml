@@ -58,12 +58,16 @@
     args:
       executable: /bin/bash
 
-  - name: Install pipx and uv
+  - name: Install pipx globally
     shell: |
       {{ pyenv_root }}/shims/pip3 install pipx
-      ~/.local/bin/pipx install uv
+      export PATH="$HOME/.local/bin:$PATH"
+      pipx install uv --include-deps
     args:
       executable: /bin/bash
+      creates: ~/.local/bin/uv
+    environment:
+      PATH: "{{ ansible_env.HOME }}/.local/bin:{{ ansible_env.PATH }}"
 
   - name: Install NVM
     shell: |
