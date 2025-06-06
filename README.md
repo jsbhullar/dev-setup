@@ -1,46 +1,183 @@
-# 🛠️ Ubuntu Dev Machine Setup
+Here’s a detailed and well-structured `README.md` that explains all your choices, their purposes, and how to update or manage each component of the setup:
 
-This repository automates the installation of a full modern development stack on a freshly installed Ubuntu Desktop.
+---
 
-## ✅ Features
+### ✅ Final `README.md`
 
-- **Python (via pyenv)** with uv, pipx
-- **Node.js (via nvm)**, Go, Rust
-- **Docker** + **Portainer** GUI
-- **PostgreSQL** in Docker
-- **Ollama** for running local LLMs
-- **Open WebUI** (on port `3002`) for chat with Ollama
-- **Dokploy** (PaaS platform, on port `3000`)
+````markdown
+# 🛠️ Ubuntu Developer Workstation Setup
 
-## 🚀 How to Use
+This repository provides a **fully automated setup** script using **Ansible** to transform a fresh Ubuntu Desktop system into a powerful, AI-ready development machine.
+
+---
+
+## 📦 What's Included and Why
+
+### 🔁 Base System Setup
+- Updates the system and installs essential build tools (`build-essential`, `curl`, `git`, `unzip`, etc.)
+
+---
+
+### 🐍 Python Stack (via pyenv)
+- Enables installation of **multiple Python versions**
+- Global default set to **3.12.3**
+- Includes `pipx` and `uv` for modern, isolated Python tooling
+
+> 📌 Update Python version:
+```bash
+pyenv install 3.13.0
+pyenv global 3.13.0
+````
+
+---
+
+### ⚙️ Node.js (via nvm)
+
+* Version-managed Node environment
+* Installs the latest **LTS release** of Node.js
+
+> 📌 Update Node version:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/dev-setup.git
-cd dev-setup
-./install-dev.sh
+nvm install --lts
+nvm use --lts
 ```
 
-## 🌐 Services
+---
 
-| Service       | URL                     | Notes                           |
-|---------------|--------------------------|----------------------------------|
-| Portainer     | https://localhost:9443   | Manage Docker containers         |
-| Dokploy       | http://localhost:3000    | PaaS for deploying apps          |
-| Open WebUI    | http://localhost:3002    | Chat with local LLMs via Ollama |
-| PostgreSQL    | localhost:5432           | devuser / devpass / devdb        |
+### 🚀 Rust and Go
 
-## 📦 After Installation
+* **Rust** installed via `rustup`
+* **Go** (v1.22.3) installed via official binary
 
-- Use `ollama run llama2` to run models
-- Use `dokploy` UI or CLI to deploy your apps
-- Use `docker ps` and `portainer` for container overview
+> 📌 Update:
 
-## 🔁 Update Services
+```bash
+rustup update
+```
+
+For Go, update manually via latest `.tar.gz` download.
+
+---
+
+### 🐳 Docker + Portainer
+
+* Docker installed via official script
+* Adds user to `docker` group for non-root usage
+* **Portainer CE** runs on `https://localhost:9443` for container management
+
+> 📌 Update Portainer:
+
+```bash
+docker pull portainer/portainer-ce
+docker stop portainer && docker rm portainer
+docker run -d -p 8000:8000 -p 9443:9443 \
+  --name=portainer \
+  --restart=always \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v portainer_data:/data \
+  portainer/portainer-ce:latest
+```
+
+---
+
+### 🧠 Ollama (Local LLM Runner)
+
+* Runs large language models locally (like LLaMA2, Mistral, etc.)
+
+> 📌 Use it like:
+
+```bash
+ollama run llama2
+```
+
+> 📌 Update:
+
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+---
+
+### 🌐 Open WebUI (on port `3002`)
+
+* Web-based chat interface for Ollama
+* Chat history is persisted via a volume in `~/.open-webui`
+
+> 📌 Update:
 
 ```bash
 docker pull ghcr.io/open-webui/open-webui
 docker restart open-webui
+```
 
+---
+
+### 🚀 Dokploy (on port `3000`)
+
+* Self-hosted PaaS platform to deploy apps using Docker Compose
+* Installed via official script
+* UI available at `http://localhost:3000`
+
+> 📌 Update:
+
+```bash
 docker pull dokploy/dokploy:latest
 docker restart dokploy
 ```
+
+---
+
+### 🗃 PostgreSQL (in Docker)
+
+* Development PostgreSQL instance
+* Credentials:
+
+  * `user`: `devuser`
+  * `password`: `devpass`
+  * `db`: `devdb`
+
+> 📌 Update:
+
+```bash
+docker pull postgres:16
+docker restart dev-postgres
+```
+
+---
+
+## 🔧 Installation Instructions
+
+1. Clone this repository:
+
+```bash
+git clone https://github.com/YOUR_USERNAME/dev-setup.git
+cd dev-setup
+```
+
+2. Run the setup script:
+
+```bash
+./install-dev.sh
+```
+
+> 🛡️ It will prompt for your sudo password when needed.
+
+---
+
+## 🌍 Port Map Summary
+
+| Service       | URL                                              |
+| ------------- | ------------------------------------------------ |
+| Portainer     | [https://localhost:9443](https://localhost:9443) |
+| Dokploy       | [http://localhost:3000](http://localhost:3000)   |
+| Open WebUI    | [http://localhost:3002](http://localhost:3002)   |
+| PostgreSQL DB | localhost:5432                                   |
+
+---
+
+## 🤝 Contributing
+
+Pull requests to add other languages, SDKs, or tools (e.g. Java, Deno, AI APIs) are welcome!
+
+---
