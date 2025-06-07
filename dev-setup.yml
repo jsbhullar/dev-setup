@@ -1,205 +1,270 @@
 ---
-- name: Modern Developer Workstation Setup
+- name: Interactive Developer Workstation Setup
   hosts: localhost
   become: yes
+
+  vars_prompt:
+    - name: install_go
+      prompt: "Install Go (1.22.3)?"
+      private: no
+      default: "yes"
+
+    - name: install_rust
+      prompt: "Install Rust?"
+      private: no
+      default: "yes"
+
+    - name: install_ollama
+      prompt: "Install Ollama?"
+      private: no
+      default: "yes"
+
+    - name: install_openwebui
+      prompt: "Install Open WebUI (Ollama frontend)?"
+      private: no
+      default: "yes"
+
+    - name: install_vscode
+      prompt: "Install Visual Studio Code?"
+      private: no
+      default: "yes"
+
+    - name: install_pgadmin
+      prompt: "Install pgAdmin Desktop?"
+      private: no
+      default: "yes"
+
+    - name: install_docker
+      prompt: "Install Docker?"
+      private: no
+      default: "yes"
+
+    - name: install_portainer
+      prompt: "Install Portainer (Docker GUI)?"
+      private: no
+      default: "yes"
+
   vars:
-    pyenv_root: "{{ ansible_env.HOME }}/.pyenv"
-    nvm_dir: "{{ ansible_env.HOME }}/.nvm"
+    user_home: "{{ lookup('env', 'HOME') }}"
+    pyenv_root: "{{ user_home }}/.pyenv"
+    nvm_dir: "{{ user_home }}/.nvm"
 
   tasks:
-  - name: Update system and install base packages
-    apt:
-      name:
-        - build-essential
-        - curl
-        - git
-        - unzip
-        - zip
-        - software-properties-common
-        - apt-transport-https
-        - ca-certificates
-        - gnupg
-        - libssl-dev
-        - zlib1g-dev
-        - libbz2-dev
-        - libreadline-dev
-        - libsqlite3-dev
-        - llvm
-        - libncursesw5-dev
-        - xz-utils
-        - tk-dev
-        - libxml2-dev
-        - libxmlsec1-dev
-        - libffi-dev
-        - liblzma-dev
-      update_cache: yes
-      state: present
+    - name: Update system and install base packages
+      apt:
+        name:
+          - build-essential
+          - curl
+          - git
+          - unzip
+          - zip
+          - software-properties-common
+          - apt-transport-https
+          - ca-certificates
+          - gnupg
+          - libssl-dev
+          - zlib1g-dev
+          - libbz2-dev
+          - libreadline-dev
+          - libsqlite3-dev
+          - llvm
+          - libncursesw5-dev
+          - xz-utils
+          - tk-dev
+          - libxml2-dev
+          - libxmlsec1-dev
+          - libffi-dev
+          - liblzma-dev
+          - python3-pip
+        update_cache: yes
+        state: present
 
-  - name: Install pyenv
-    git:
-      repo: https://github.com/pyenv/pyenv.git
-      dest: "{{ pyenv_root }}"
+    - name: Install pyenv as non-root user
+      become: false
+      git:
+        repo: https://github.com/pyenv/pyenv.git
+        dest: "{{ pyenv_root }}"
 
-  - name: Configure pyenv in bashrc
-    lineinfile:
-      path: ~/.bashrc
-      line: 'export PYENV_ROOT="{{ pyenv_root }}" && export PATH="$PYENV_ROOT/bin:$PATH" && eval "$(pyenv init --path)" && eval "$(pyenv init -)"'
-      create: yes
-      state: present
+    - name: Configure pyenv in user's .bashrc
+      become: false
+      lineinfile:
+        path: ~/.bashrc
+        line: 'export PYENV_ROOT="{{ pyenv_root }}" && export PATH="$PYENV_ROOT/bin:$PATH" && eval "$(pyenv init --path)" && eval "$(pyenv init -)"'
+        create: yes
+        state: present
 
-  - name: Install Python via pyenv
-    shell: |
-      export PYENV_ROOT="{{ pyenv_root }}"
-      export PATH="$PYENV_ROOT/bin:$PATH"
-      eval "$(pyenv init --path)"
-      eval "$(pyenv init -)"
-      pyenv install -s 3.12.3
-      pyenv global 3.12.3
-    args:
-      executable: /bin/bash
+    - name: Install Python 3.12.3 via pyenv as non-root user
+      become: false
+      shell: |
+        export PYENV_ROOT="{{ pyenv_root }}"
+        export PATH="$PYENV_ROOT/bin:$PATH"
+        eval "$(pyenv init --path)"
+        eval "$(pyenv init -)"
+        pyenv install -s 3.12.3
+        pyenv global 3.12.3
+      args:
+        executable: /bin/bash
+      environment:
+        PYENV_ROOT: "{{ pyenv_root }}"
+        PATH: "{{ pyenv_root }}/bin:{{ ansible_env.PATH }}"
 
-  - name: Install pipx globally
-    shell: |
-      {{ pyenv_root }}/shims/pip3 install pipx
-      export PATH="$HOME/.local/bin:$PATH"
-      pipx install uv --include-deps
-    args:
-      executable: /bin/bash
-      creates: ~/.local/bin/uv
-    environment:
-      PATH: "{{ ansible_env.HOME }}/.local/bin:{{ ansible_env.PATH }}"
+    - name: Install pipx using pyenv Python (non-root)
+      become: false
+      shell: |
+        export PYENV_ROOT="{{ pyenv_root }}"
+        export PATH="$PYENV_ROOT/bin:$PATH"
+        eval "$(pyenv init --path)"
+        eval "$(pyenv init -)"
+        pip3 install --user pipx
+      args:
+        executable: /bin/bash
 
-  - name: Install NVM
-    shell: |
-      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-    args:
-      creates: "{{ nvm_dir }}"
+    - name: Install uv using pipx (non-root)
+      become: false
+      shell: |
+        export PATH="$HOME/.local/bin:$PATH"
+        pipx install uv --include-deps
+      args:
+        executable: /bin/bash
 
-  - name: Add NVM to bashrc
-    lineinfile:
-      path: ~/.bashrc
-      line: 'export NVM_DIR="{{ nvm_dir }}" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"'
-      create: yes
-      state: present
+    - name: Install NVM
+      become: false
+      shell: |
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+      args:
+        creates: "{{ nvm_dir }}"
 
-  - name: Install latest LTS Node.js via NVM
-    shell: |
-      export NVM_DIR="{{ nvm_dir }}"
-      . "$NVM_DIR/nvm.sh"
-      nvm install --lts
-    args:
-      executable: /bin/bash
+    - name: Add NVM to bashrc
+      become: false
+      lineinfile:
+        path: ~/.bashrc
+        line: 'export NVM_DIR="{{ nvm_dir }}" && [ -s "$NVM_DIR/nvm.sh" ] && \\. "$NVM_DIR/nvm.sh"'
+        create: yes
+        state: present
 
-  - name: Install Rust
-    shell: |
-      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    args:
-      executable: /bin/bash
+    - name: Install latest LTS Node.js via NVM
+      become: false
+      shell: |
+        export NVM_DIR="{{ nvm_dir }}"
+        . "$NVM_DIR/nvm.sh"
+        nvm install --lts
+      args:
+        executable: /bin/bash
 
-  - name: Install Go
-    shell: |
-      GO_VERSION=1.22.3
-      curl -LO https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz
-      sudo rm -rf /usr/local/go
-      sudo tar -C /usr/local -xzf go$GO_VERSION.linux-amd64.tar.gz
-      echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
-    args:
-      executable: /bin/bash
+    - name: Install Rust
+      when: install_rust | bool
+      become: false
+      shell: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.bashrc
+      args:
+        executable: /bin/bash
 
-  - name: Install Docker
-    shell: |
-      curl -fsSL https://get.docker.com -o get-docker.sh
-      sh get-docker.sh
-    args:
-      executable: /bin/bash
+    - name: Install Go
+      when: install_go | bool
+      shell: |
+        GO_VERSION=1.22.3
+        curl -LO https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz
+        sudo rm -rf /usr/local/go
+        sudo tar -C /usr/local -xzf go$GO_VERSION.linux-amd64.tar.gz
+        echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+      args:
+        executable: /bin/bash
 
-  - name: Add current user to docker group
-    user:
-      name: "{{ ansible_user }}"
-      groups: docker
-      append: yes
+    - name: Install Docker
+      when: install_docker | bool
+      shell: |
+        curl -fsSL https://get.docker.com -o get-docker.sh
+        sh get-docker.sh
+      args:
+        executable: /bin/bash
 
-  - name: Enable Docker service
-    systemd:
-      name: docker
-      enabled: yes
-      state: started
+    - name: Add current user to docker group
+      when: install_docker | bool
+      user:
+        name: "{{ ansible_user_id }}"
+        groups: docker
+        append: yes
 
-  - name: Install Portainer (Docker GUI)
-    shell: |
-      docker volume create portainer_data
-      docker run -d -p 8000:8000 -p 9443:9443 \
-        --name=portainer \
-        --restart=always \
-        -v /var/run/docker.sock:/var/run/docker.sock \
-        -v portainer_data:/data \
-        portainer/portainer-ce:latest
-    args:
-      executable: /bin/bash
+    - name: Enable Docker service
+      when: install_docker | bool
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
 
-  - name: Install Ollama
-    shell: |
-      curl -fsSL https://ollama.com/install.sh | sh
-    args:
-      executable: /bin/bash
+    - name: Install Portainer (Docker GUI)
+      when: install_portainer | bool
+      community.docker.docker_volume:
+        name: portainer_data
 
-  - name: Create Open WebUI data directory
-    file:
-      path: "{{ ansible_env.HOME }}/.open-webui"
-      state: directory
-      mode: '0755'
+    - name: Start Portainer container
+      when: install_portainer | bool
+      community.docker.docker_container:
+        name: portainer
+        image: portainer/portainer-ce:latest
+        state: started
+        restart_policy: always
+        published_ports:
+          - "8000:8000"
+          - "9443:9443"
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+          - portainer_data:/data
 
-  - name: Run Open WebUI container on port 3002
-    community.docker.docker_container:
-      name: open-webui
-      image: ghcr.io/open-webui/open-webui
-      state: started
-      restart_policy: unless-stopped
-      ports:
-        - "3002:3000"
-      volumes:
-        - "{{ ansible_env.HOME }}/.open-webui:/app/backend/data"
-      env:
-        OLLAMA_BASE_URL: http://localhost:11434
+    - name: Install Ollama
+      when: install_ollama | bool
+      shell: |
+        curl -fsSL https://ollama.com/install.sh | sh
+      args:
+        executable: /bin/bash
 
-  - name: Install Dokploy
-    shell: |
-      curl -sSL https://dokploy.com/install.sh | sh
-    args:
-      executable: /bin/bash
+    - name: Create Open WebUI data directory
+      when: install_openwebui | bool
+      file:
+        path: "{{ user_home }}/.open-webui"
+        state: directory
+        mode: '0755'
 
-  - name: Run PostgreSQL in Docker for Dev
-    community.docker.docker_container:
-      name: dev-postgres
-      image: postgres:16
-      state: started
-      restart_policy: unless-stopped
-      ports:
-        - "5432:5432"
-      env:
-        POSTGRES_PASSWORD: devpass
-        POSTGRES_USER: devuser
-        POSTGRES_DB: devdb
+    - name: Run Open WebUI container on port 3002
+      when: install_openwebui | bool
+      community.docker.docker_container:
+        name: open-webui
+        image: ghcr.io/open-webui/open-webui
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "3002:3000"
+        volumes:
+          - "{{ user_home }}/.open-webui:/app/backend/data"
+        env:
+          OLLAMA_BASE_URL: http://localhost:11434
 
-  - name: Add Microsoft GPG key for VS Code
-    apt_key:
-      url: https://packages.microsoft.com/keys/microsoft.asc
-      state: present
+    - name: Run PostgreSQL in Docker for Dev
+      community.docker.docker_container:
+        name: dev-postgres
+        image: postgres:16
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "5432:5432"
+        env:
+          POSTGRES_PASSWORD: devpass
+          POSTGRES_USER: devuser
+          POSTGRES_DB: devdb
 
-  - name: Add VS Code repository
-    apt_repository:
-      repo: deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main
-      state: present
+    - name: Install Visual Studio Code
+      when: install_vscode | bool
+      apt:
+        deb: https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64
+        state: present
 
-  - name: Install VS Code
-    apt:
-      name: code
-      state: present
-
-  - name: Install pgAdmin (PostgreSQL GUI)
-    shell: |
-      curl https://www.pgadmin.org/static/packages_pgadmin_org.pub | gpg --dearmor > /usr/share/keyrings/pgadmin.gpg
-      echo "deb [signed-by=/usr/share/keyrings/pgadmin.gpg] https://ftp.postgresql.org/pub/pgadmin/pgadmin4/apt/jammy pgadmin4 main" > /etc/apt/sources.list.d/pgadmin4.list
-      apt update && apt install -y pgadmin4-desktop
-    args:
-      executable: /bin/bash
+    - name: Install pgAdmin 4 Desktop
+      when: install_pgadmin | bool
+      shell: |
+        curl https://www.pgadmin.org/static/packages_pgadmin_org.pub | gpg --dearmor > /usr/share/keyrings/pgadmin-keyring.gpg
+        echo "deb [signed-by=/usr/share/keyrings/pgadmin-keyring.gpg] https://ftp.postgresql.org/pub/pgadmin/pgadmin4/apt/$(lsb_release -cs) pgadmin4 main" > /etc/apt/sources.list.d/pgadmin4.list
+        apt update
+        apt install -y pgadmin4-desktop
+      args:
+        executable: /bin/bash
