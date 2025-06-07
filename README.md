@@ -1,211 +1,128 @@
-# 🛠️ Ubuntu Developer Workstation Setup
+# Ubuntu Developer Workstation Setup (Ansible Playbook)
 
-This repository provides a **fully automated setup** script using **Ansible** to transform a fresh Ubuntu Desktop system into a powerful, AI-ready development machine.
+This repository contains an Ansible playbook (`dev-setup.yml`) designed to automate the setup of a powerful developer workstation based on Ubuntu Desktop. It aims to install and configure a range of essential development tools and services.
 
----
+## Purpose
 
-## 📦 What's Included and Why
+The `dev-setup.yml` playbook automates the installation and configuration of various software components required for a modern development workflow. By running this playbook, you can quickly set up a consistent environment including language version managers, containerization tools, databases, and IDEs.
 
-### 🔁 Base System Setup
-- Updates the system and installs essential build tools (`build-essential`, `curl`, `git`, `unzip`, etc.)
+## Prerequisites
 
----
+*   A machine running Ubuntu Desktop (or a compatible Debian-based distribution).
+*   `git` installed on the target machine to clone this repository.
+*   `ansible` installed on the target machine. You can typically install it using `sudo apt update && sudo apt install ansible`.
+*   Sudo privileges for the user running the playbook, as some tasks require root access (handled by `become: yes` in the playbook).
+*   An active internet connection to download packages, tools, and container images.
 
-### 🐍 Python Stack (via pyenv)
-- Enables installation of **multiple Python versions**
-- Global default set to **3.12.3**
-- Includes `pipx` and `uv` for modern, isolated Python tooling
+## How to Run the Playbook
 
-> 📌 Update Python version:
-```bash
-pyenv install 3.13.0
-pyenv global 3.13.0
-````
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/jsbhullar/dev-setup.git
+    cd dev-setup
+    ```
 
----
+2.  **Run the Ansible playbook:**
+    ```bash
+    ansible-playbook dev-setup.yml --ask-become-pass
+    ```
+    The `--ask-become-pass` flag will prompt you for your user's password for sudo escalation when needed.
 
-### ⚙️ Node.js (via nvm)
+    The playbook uses interactive prompts (`vars_prompt`) to ask if you want to install certain optional components (Go, Rust, Ollama, Open WebUI, VS Code, pgAdmin, Docker, Portainer). Respond with `yes` or `no` as desired.
 
-* Version-managed Node environment
-* Installs the latest **LTS release** of Node.js
+## What the Playbook Does
 
-> 📌 Update Node version:
+The `dev-setup.yml` playbook performs the following actions:
 
-```bash
-nvm install --lts
-nvm use --lts
-```
+*   **Base System Setup:**
+    *   Updates the system's package list (`apt update`).
+    *   Installs essential build tools and common packages (`build-essential`, `curl`, `git`, `unzip`, `zip`, `software-properties-common`, `apt-transport-https`, `ca-certificates`, `gnupg`, and various development libraries like `libssl-dev`, `zlib1g-dev`, `libreadline-dev`, `libffi-dev`, etc., along with `python3-pip`).
 
----
+*   **Python Stack (via pyenv):**
+    *   Installs `pyenv` by cloning its repository into `~/.pyenv`.
+    *   Adds `pyenv` initialization lines to the user's `~/.bashrc` file to configure the shell environment.
+    *   Installs Python version `3.12.3` using `pyenv`.
+    *   Sets Python `3.12.3` as the global default Python version for the user using `pyenv`.
+    *   Installs `pipx` using the newly installed Python version.
+    *   Installs `uv` (a fast Python package installer and resolver) using `pipx`.
 
-### 🚀 Rust and Go
+*   **Node.js (via nvm):**
+    *   Installs `nvm` (Node Version Manager) using its official install script into `~/.nvm`.
+    *   Adds `nvm` initialization lines to the user's `~/.bashrc` file.
+    *   Installs the latest LTS (Long Term Support) version of Node.js using `nvm`.
 
-* **Rust** installed via `rustup`
-* **Go** (v1.22.3) installed via official binary
+*   **Rust (Optional):**
+    *   *If you choose to install Rust:* Downloads and runs the `rustup.rs` script to install Rust and the Cargo package manager.
+    *   Adds Cargo's binary directory (`~/.cargo/bin`) to the user's `PATH` in `~/.bashrc`.
 
-> 📌 Update:
+*   **Go (Optional):**
+    *   *If you choose to install Go:* Downloads the Go `1.22.3` binary release for Linux AMD64.
+    *   Extracts the Go archive to `/usr/local`.
+    *   Adds the Go binary directory (`/usr/local/go/bin`) to the user's `PATH` in `~/.bashrc`.
 
-```bash
-rustup update
-```
+*   **Docker (Optional):**
+    *   *If you choose to install Docker:* Downloads and runs the official `get-docker.sh` convenience script.
+    *   Adds the current user to the `docker` group, allowing non-root execution of Docker commands (requires logging out and back in or restarting the system to take effect).
+    *   Ensures the Docker systemd service is enabled and started.
 
-> For Go, update manually via latest `.tar.gz` download.
+*   **Portainer (Optional, Docker GUI):**
+    *   *If you choose to install Portainer and Docker:* Creates a Docker volume named `portainer_data`.
+    *   Runs the `portainer/portainer-ce:latest` Docker container, configured to start automatically, expose ports `8000` (edge agent) and `9443` (web UI), and use the `portainer_data` volume. Access the UI at `https://localhost:9443`.
 
----
+*   **Ollama (Optional, Local LLM Runner):**
+    *   *If you choose to install Ollama:* Downloads and runs the official `ollama.com/install.sh` script to install Ollama, a tool for running large language models locally.
 
-### 🐳 Docker + Portainer
+*   **Open WebUI (Optional, Ollama Frontend):**
+    *   *If you choose to install Open WebUI and Ollama:* Creates a directory `~/.open-webui` for data persistence.
+    *   Runs the `ghcr.io/open-webui/open-webui` Docker container, configured to restart unless stopped, map host port `3002` to container port `3000`, mount the data directory, and set the `OLLAMA_BASE_URL` to connect to the locally installed Ollama instance. Access the UI at `http://localhost:3002`.
 
-* Docker installed via official script
-* Adds user to `docker` group for non-root usage
-* **Portainer CE** runs on `https://localhost:9443` for container management
+*   **PostgreSQL (in Docker):**
+    *   Runs a `postgres:16` Docker container named `dev-postgres`, configured to restart unless stopped.
+    *   Maps host port `5432` to the container's port `5432`.
+    *   Sets environment variables for the default user (`devuser`), password (`devpass`), and database (`devdb`). Connect to this instance at `localhost:5432`.
 
-> 📌 Update Portainer:
+*   **Visual Studio Code (Optional):**
+    *   *If you choose to install VS Code:* Downloads and installs the latest stable `code_*.deb` package from Microsoft. This typically also adds the VS Code repository for future updates via `apt`. Launch using `code` in the terminal or via the application menu.
 
-```bash
-docker pull portainer/portainer-ce
-docker stop portainer && docker rm portainer
-docker run -d -p 8000:8000 -p 9443:9443 \
-  --name=portainer \
-  --restart=always \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v portainer_data:/data \
-  portainer/portainer-ce:latest
-```
+*   **pgAdmin 4 Desktop (Optional, PostgreSQL GUI):**
+    *   *If you choose to install pgAdmin:* Downloads the pgAdmin public key and adds it to the system's keyrings.
+    *   Adds the official pgAdmin 4 APT repository to your system's software sources.
+    *   Updates the APT cache and installs the `pgadmin4-desktop` package. Launch via the application menu. Connect to the `dev-postgres` container at `localhost:5432` using the defined credentials.
 
----
+## Port Map Summary (for Docker services)
 
-### 🧠 Ollama (Local LLM Runner)
+| Service         | Access URL/Port         | Notes                                  |
+| :-------------- | :---------------------- | :------------------------------------- |
+| **Portainer**   | `https://localhost:9443`  | Docker GUI                             |
+| **Open WebUI**  | `http://localhost:3002` | Frontend for local Ollama instance     |
+| **PostgreSQL**  | `localhost:5432`        | Development database instance (`devdb`)|
 
-* Runs large language models locally (like LLaMA2, Mistral, etc.)
+Note: The Dokploy service mentioned in previous README versions is **not** included in the current `dev-setup.yml` playbook provided.
 
-> 📌 Use it like:
+## Contributing
 
-```bash
-ollama run llama2
-```
+Feel free to fork this repository and modify the `dev-setup.yml` playbook to fit your specific development needs. If you identify improvements to the playbook structure or find issues, consider opening a pull request.
 
-> 📌 Update:
+## License
 
-```bash
-curl -fsSL https://ollama.com/install.sh | sh
-```
+MIT License
 
----
+Copyright (c) [2025] [Meharsoft Technologies Pvt.Ltd.]
 
-### 🌐 Open WebUI (on port `3002`)
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-* Web-based chat interface for Ollama
-* Chat history is persisted via a volume in `~/.open-webui`
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-> 📌 Update:
-
-```bash
-docker pull ghcr.io/open-webui/open-webui
-docker restart open-webui
-```
-
----
-
-### 🚀 Dokploy (on port `3000`)
-
-* Self-hosted PaaS platform to deploy apps using Docker Compose
-* Installed via official script
-* UI available at `http://localhost:3000`
-
-> 📌 Update:
-
-```bash
-docker pull dokploy/dokploy:latest
-docker restart dokploy
-```
-
----
-
-### 🗃 PostgreSQL (in Docker)
-
-* Development PostgreSQL instance
-* Credentials:
-
-  * `user`: `devuser`
-  * `password`: `devpass`
-  * `db`: `devdb`
-
-> 📌 Update:
-
-```bash
-docker pull postgres:16
-docker restart dev-postgres
-```
-
----
-
-### 🧑‍💻 Visual Studio Code (VS Code)
-
-* Installed from official Microsoft repository
-* Lightweight, extensible IDE with marketplace
-
-> 📌 Launch:
-
-```bash
-code
-```
-
-> 📌 Update:
-> Handled via system package manager:
-
-```bash
-sudo apt update && sudo apt upgrade code
-```
-
----
-
-### 🗂 pgAdmin 4 (PostgreSQL GUI)
-
-* GUI tool to manage PostgreSQL databases locally
-* Installed as a native GTK desktop app
-
-> 📌 Launch: Search **pgAdmin 4** from application menu
-> 📌 Connect to DB:
-
-* Host: `localhost`
-* Port: `5432`
-* Username: `devuser`
-* Password: `devpass`
-
----
-
-## 🔧 Installation Instructions
-
-1. Clone this repository:
-
-```bash
-git clone https://github.com/YOUR_USERNAME/dev-setup.git
-cd dev-setup
-```
-
-2. Run the setup script:
-
-```bash
-./install-dev.sh
-```
-
-> 🛡️ It will prompt for your sudo password when needed.
-
----
-
-## 🌍 Port Map Summary
-
-| Service       | URL/Access                                       |
-| ------------- | ------------------------------------------------ |
-| Portainer     | [https://localhost:9443](https://localhost:9443) |
-| Dokploy       | [http://localhost:3000](http://localhost:3000)   |
-| Open WebUI    | [http://localhost:3002](http://localhost:3002)   |
-| PostgreSQL DB | `localhost:5432`                                 |
-| VS Code       | `code` in terminal or app menu                   |
-| pgAdmin 4     | Application menu > pgAdmin 4                     |
-
----
-
-## 🤝 Contributing
-
-Pull requests to add other languages, SDKs, GUI tools (e.g., Deno, Java, RedisInsight), or LLM enhancements are welcome!
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
