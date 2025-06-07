@@ -14,7 +14,9 @@ The `dev-setup.yml` playbook automates the installation and configuration of var
 *   Sudo privileges for the user running the playbook, as some tasks require root access (handled by `become: yes` in the playbook).
 *   An active internet connection to download packages, tools, and container images.
 
-## How to Run the Playbook
+## How to Run the Setup
+
+This repository includes a simple bash script, `install-dev.sh`, to facilitate running the Ansible playbook with the necessary options.
 
 1.  **Clone the repository:**
     ```bash
@@ -22,13 +24,21 @@ The `dev-setup.yml` playbook automates the installation and configuration of var
     cd dev-setup
     ```
 
-2.  **Run the Ansible playbook:**
+2.  **Make the script executable:**
     ```bash
-    ansible-playbook dev-setup.yml --ask-become-pass
+    chmod +x install-dev.sh
     ```
-    The `--ask-become-pass` flag will prompt you for your user's password for sudo escalation when needed.
 
-    The playbook uses interactive prompts (`vars_prompt`) to ask if you want to install certain optional components (Go, Rust, Ollama, Open WebUI, VS Code, pgAdmin, Docker, Portainer). Respond with `yes` or `no` as desired.
+3.  **Run the installation script:**
+    ```bash
+    ./install-dev.sh
+    ```
+
+The script will:
+*   Print introductory messages.
+*   Prompt you if you want to enable verbose output for the Ansible run (you can enter `-v`, `-vv`, `-vvv`, or just press Enter for no verbosity).
+*   Execute the `ansible-playbook dev-setup.yml -K [verbosity]` command. The `-K` flag will prompt you for your user's password for sudo (privilege escalation) when the playbook requires it.
+*   The Ansible playbook will then run, prompting you interactively for each optional component you wish to install (Go, Rust, Ollama, etc.). Respond with `yes` or `no`.
 
 ## What the Playbook Does
 
